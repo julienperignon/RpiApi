@@ -1,0 +1,24 @@
+{
+  "name": "rpigpioapi",
+  "version": "1.0.0",
+  "description": "A small api to retrieve and set value to the GPIO of your RaspberryPi",
+  "main": "simplewebserver.js",
+  "dependencies": {
+    "async": "^2.0.0-rc.6",
+    "dispatch": "^1.0.0",
+    "promise": "^7.1.1",
+    "express": "^4.14.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "sudo node simplewebserver.js"
+  },
+  "keywords": [
+    "raspberry",
+    "pi",
+    "gpio",
+    "api"
+  ],
+  "author": "Julien PERIGNON (perignon.julien@gmail.com)",
+  "license": "UNLICENSED"
+}
