@@ -1,4 +1,3 @@
-//var http = require('http');
 var express = require('express');
 var app = express();
 var sys = require('sys');
@@ -117,7 +116,6 @@ function getRaspberryStatus(){
 			});
 			
 		},function done(){
-			console.log("done");
 			resolve(jsonObject);
 		});
 	
@@ -129,26 +127,20 @@ function getRaspberryStatus(){
 function getGpioStatus(pin) {
 
     var jsonObject = {
-        pin: pin,
-        direction: "",
-        value: "",
-        edge: ""
+        pin: pin
     }
 
     return new Promise(function (resolve, reject) {
         getGpioValueFromCommand(directionCmd(pin))
 			.then(function (value) {
-			    //console.log("setting direction");
 			    jsonObject.direction = value;
 			})
 			.then(getGpioValueFromCommand(valueCmd(pin))
 			.then(function (value) {
-			    //console.log("setting value");
 			    jsonObject.value = value;
 			})
 			.then(getGpioValueFromCommand(edgeCmd(pin))
 			.then(function (value) {
-			    //console.log("setting edge");
 			    jsonObject.edge = value;
 			})
 			.then(function () { resolve(jsonObject) })));
@@ -159,11 +151,8 @@ function getGpioStatus(pin) {
 //Returns the "direction" property of the specied pin and feeds the jsonObject passed as parameter. This returns a premise
 function getGpioDirection(pin, jsonObject) {
     return new Promise(function (resolve, reject) {
-        //console.log("before : " +JSON.stringify(jsonObject));
         getGpioValueFromCommand(directionCmd(pin)).then(function (value) {
-            //console.log("value="+value);
             jsonObject.direction = value;
-            //console.log("after : " +JSON.stringify(jsonObject));
             resolve(pin, jsonObject)
         }).catch(errorHandler);
 
@@ -174,10 +163,7 @@ function getGpioDirection(pin, jsonObject) {
 function getGpioValue(pin, jsonObject) {
     return new Promise(function (resolve, reject) {
         getGpioValueFromCommand(valueCmd(pin)).then(function (value) {
-            //console.log("value="+value);
             jsonObject.value = value;
-            //console.log("heho");
-            //console.log("after : " + JSON.stringify(jsonObject));
             resolve(pin, jsonObject)
         }).catch(errorHandler);
     });
@@ -215,10 +201,14 @@ function initServer() {
         }
     });
 
+    //Start listening on PORT
     app.listen(PORT, function () {
         console.log("server running ! ");
     });
 }
+
+
+//Testing stuff
 
 function haveFun() {
 
@@ -254,7 +244,7 @@ function haveFun() {
 
 }
 
-
+//Init gpio & express server
 (function init() {
     initGpio();
     initServer();
