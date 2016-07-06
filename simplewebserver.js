@@ -42,7 +42,7 @@ const edgeCmd = function (pin) {
 }
 
 //Return the value of gpio based shell command
-var getGpioValueFromCommand = function (cmd) {
+var getValueFromCommand = function (cmd) {
     return new Promise(function (resolve, reject) {
 
         var value = null;
@@ -131,15 +131,15 @@ function getGpioStatus(pin) {
     }
 
     return new Promise(function (resolve, reject) {
-        getGpioValueFromCommand(directionCmd(pin))
+        getValueFromCommand(directionCmd(pin))
 			.then(function (value) {
 			    jsonObject.direction = value;
 			})
-			.then(getGpioValueFromCommand(valueCmd(pin))
+			.then(getValueFromCommand(valueCmd(pin))
 			.then(function (value) {
 			    jsonObject.value = value;
 			})
-			.then(getGpioValueFromCommand(edgeCmd(pin))
+			.then(getValueFromCommand(edgeCmd(pin))
 			.then(function (value) {
 			    jsonObject.edge = value;
 			})
@@ -151,7 +151,7 @@ function getGpioStatus(pin) {
 //Returns the "direction" property of the specied pin and feeds the jsonObject passed as parameter. This returns a premise
 function getGpioDirection(pin, jsonObject) {
     return new Promise(function (resolve, reject) {
-        getGpioValueFromCommand(directionCmd(pin)).then(function (value) {
+        getValueFromCommand(directionCmd(pin)).then(function (value) {
             jsonObject.direction = value;
             resolve(pin, jsonObject)
         }).catch(errorHandler);
@@ -162,7 +162,7 @@ function getGpioDirection(pin, jsonObject) {
 //Returns the "value" property of the specied pin and feeds the jsonObject passed as parameter. This returns a premise
 function getGpioValue(pin, jsonObject) {
     return new Promise(function (resolve, reject) {
-        getGpioValueFromCommand(valueCmd(pin)).then(function (value) {
+        getValueFromCommand(valueCmd(pin)).then(function (value) {
             jsonObject.value = value;
             resolve(pin, jsonObject)
         }).catch(errorHandler);
@@ -240,7 +240,7 @@ function haveFun() {
 
     a(1).then(b).then(c).then(console.log);
 
-    //getGpioValueFromCommand(directionCmd(1)).then(console.log).then(getGpioValueFromCommand(valueCmd(4))).then(console.log);
+    //getValueFromCommand(directionCmd(1)).then(console.log).then(getValueFromCommand(valueCmd(4))).then(console.log);
 
 }
 
