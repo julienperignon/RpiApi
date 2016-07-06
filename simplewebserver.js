@@ -19,9 +19,9 @@ const errorHandler = function (err) {
     console.log(err);
 }
 
-//Commands
+//GPIO Commands
 
-//base command
+//GPIO Base command
 const baseCmd = function (pin) {
     return 'sudo cat ' + gpioBasePath + pin;
 }
@@ -40,6 +40,11 @@ const valueCmd = function (pin) {
 const edgeCmd = function (pin) {
     return baseCmd(pin) + '/edge';
 }
+
+//RaspberryPi Commands
+
+//Temperature command
+const tempCmd = 'sudo cat /sys/class/thermal/thermal_zone0/temp'
 
 //Return the value of gpio based shell command
 var getValueFromCommand = function (cmd) {
@@ -76,17 +81,17 @@ var getValueFromCommand = function (cmd) {
 //does nothing if the gpio pin has already been exported
 function exportGpioToFileSystem(pin) {
 
-	var cmd = 'sudo test -d ' + gpioBasePath + pin + ' && echo  || sudo echo ' + pin + ' > /sys/class/gpio/export';
-	//console.log(cmd);
-	child = exec(cmd, function (error, stdout, stderr) {
-		if (error == null) {
-			console.log('GPIO ' + pin + ' exported or already exported');
-		}
-		else {
-			console.log('error on pin' + pin + ' : ' + error);
-		}
-	});
-    
+    var cmd = 'sudo test -d ' + gpioBasePath + pin + ' && echo  || sudo echo ' + pin + ' > /sys/class/gpio/export';
+    //console.log(cmd);
+    child = exec(cmd, function (error, stdout, stderr) {
+        if (error == null) {
+            console.log('GPIO ' + pin + ' exported or already exported');
+        }
+        else {
+            console.log('error on pin' + pin + ' : ' + error);
+        }
+    });
+
 }
 
 //Init the gpio pins (export)
@@ -99,27 +104,33 @@ function initGpio() {
 };
 
 //Get the raspberry pi status and the status of every gpio pin
-function getRaspberryStatus(){
-	return new Promise(function (resolve, reject) {
-		var jsonObject = {
-			"raspberry" :{
+function getRaspberryStatus() {
+    return new Promise(function (resolve, reject) {
+        var jsonObject = {
+            "raspberry": {
 
-			}
-		};
+            }
+        };
 
-		async.eachSeries(gpioPins,function iterate(item,callback){
-			console.log(item);
-			getGpioStatus(item).then(function(json){
-				console.log(json);
-				jsonObject.raspberry["gpio"+item] = json;
-				callback();
-			});
-			
-		},function done(){
-			resolve(jsonObject);
-		});
-	
-	});
+        getValueFromCommand(tempCmd).then(function (value) {
+            jsonObject.raspberry.temperature = value;
+        }).then(function () {
+            async.eachSeries(gpioPins, function iterate(item, callback) {
+                console.log(item);
+                getGpioStatus(item).then(function (json) {
+                    console.log(json);
+                    jsonObject.raspberry["gpio" + item] = json;
+                    callback();
+                });
+
+            }, function done() {
+                resolve(jsonObject);
+            });
+        });
+
+
+
+    });
 
 }
 
@@ -177,7 +188,7 @@ function checkGpioPin(pin) {
 
 //Init the web server and contains routes + logic 
 function initServer() {
-	//Retrieve pin status
+    //Retrieve pin status
     app.get('/gpio/:pin', function (req, res) {
 
         var pin = parseInt(req.params['pin']);
@@ -190,9 +201,9 @@ function initServer() {
         }
     });
 
-	//retrieve raspberry status
-	app.get('/raspberry', function (req, res) {
-      
+    //retrieve raspberry status
+    app.get('/raspberry', function (req, res) {
+
         try {
             getRaspberryStatus(pin).then(function (jsonObject) { res.json(jsonObject) });
         }
