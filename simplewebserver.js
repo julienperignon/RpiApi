@@ -5,11 +5,13 @@ var exec = require('child_process').exec;
 var dispatch = require('dispatch');
 var Promise = require('promise');
 var async = require('async');
-var child;
 
 //Configuration
 const PORT = 80;
 const gpioPins = [0, 1, 4, 7, 8, 9, 10, 11, 15, 17, 18, 21, 22, 23, 24, 25];
+
+//const json
+const jsonOkResult = { "result" : "ok" };
 
 //Paths
 const gpioBasePath = '/sys/class/gpio/gpio';
@@ -21,7 +23,7 @@ const errorHandler = function (err) {
 
 //GPIO Commands
 
-//GPIO Base command
+//GPIO Base get command
 const baseCmd = function (pin) {
     return 'sudo cat ' + gpioBasePath + pin;
 }
@@ -41,10 +43,29 @@ const edgeCmd = function (pin) {
     return baseCmd(pin) + '/edge';
 }
 
+//GPIO base set command
+
+const setBaseCmd = function (value){
+    return 'sudo echo '+value+ ' > ';
+}
+
+//Set direction command
+const setDirectionCmd = function(pin,direction){
+    return setBaseCmd(direction) + gpioBasePath + pin + "/direction"
+}
+
+//Set direction command
+const setValueCmd = function(pin,value){
+    return setBaseCmd(value) + gpioBasePath + pin + "/value"
+}
+
 //RaspberryPi Commands
 
 //Temperature command
 const tempCmd = 'sudo cat /sys/class/thermal/thermal_zone0/temp'
+
+//date command
+const dateCmd = 'date'
 
 //Return the value of gpio based shell command
 var getValueFromCommand = function (cmd) {
@@ -64,8 +85,8 @@ var getValueFromCommand = function (cmd) {
                     console.log("else");
                     value = stdout;
                 }
-                //console.log('Executed command : ' + cmd);
-                //console.log('Result :' + value);
+                console.log('Executed command : ' + cmd);
+                console.log('Result :' + value);
 
                 resolve(value);
             }
@@ -83,7 +104,7 @@ function exportGpioToFileSystem(pin) {
 
     var cmd = 'sudo test -d ' + gpioBasePath + pin + ' && echo  || sudo echo ' + pin + ' > /sys/class/gpio/export';
     //console.log(cmd);
-    child = exec(cmd, function (error, stdout, stderr) {
+    exec(cmd, function (error, stdout, stderr) {
         if (error == null) {
             console.log('GPIO ' + pin + ' exported or already exported');
         }
@@ -98,13 +119,14 @@ function exportGpioToFileSystem(pin) {
 function initGpio() {
     console.log('calling init');
 
-    for (pin in gpioPins) {
+    gpioPins.forEach(function(pin){
         exportGpioToFileSystem(pin);
-    }
+    });
 };
 
 //Get the raspberry pi status and the status of every gpio pin
 function getRaspberryStatus() {
+
     return new Promise(function (resolve, reject) {
         var jsonObject = {
             "raspberry": {
@@ -113,17 +135,23 @@ function getRaspberryStatus() {
         };
 
         getValueFromCommand(tempCmd).then(function (value) {
+            console.log('temperature:'+value);
             jsonObject.raspberry.temperature = value;
-        }).then(function () {
+        }).catch(errorHandler)
+        getValueFromCommand(dateCmd).then(function (value) {
+            console.log('date:'+value);
+            jsonObject.raspberry.date = value;
+        })
+        .then(function () {
             async.eachSeries(gpioPins, function iterate(item, callback) {
-                console.log(item);
-                getGpioStatus(item).then(function (json) {
+                getGpioStatus(item).catch(errorHandler).then(function (json) {
                     console.log(json);
                     jsonObject.raspberry["gpio" + item] = json;
                     callback();
                 });
 
             }, function done() {
+                console.log('done');
                 resolve(jsonObject);
             });
         });
@@ -142,19 +170,19 @@ function getGpioStatus(pin) {
     }
 
     return new Promise(function (resolve, reject) {
-        getValueFromCommand(directionCmd(pin))
+        getValueFromCommand(directionCmd(pin)).catch(errorHandler)
 			.then(function (value) {
 			    jsonObject.direction = value;
-			})
-			.then(getValueFromCommand(valueCmd(pin))
+			}).catch(errorHandler)
+			.then(getValueFromCommand(valueCmd(pin)).catch(errorHandler)
 			.then(function (value) {
 			    jsonObject.value = value;
-			})
-			.then(getValueFromCommand(edgeCmd(pin))
+			}).catch(errorHandler)
+			.then(getValueFromCommand(edgeCmd(pin)).catch(errorHandler)
 			.then(function (value) {
 			    jsonObject.edge = value;
-			})
-			.then(function () { resolve(jsonObject) })));
+			}).catch(errorHandler)
+			.then(function () { resolve(jsonObject) }))).catch(errorHandler);
     });
 
 }
@@ -170,6 +198,17 @@ function getGpioDirection(pin, jsonObject) {
     });
 }
 
+//Sets the direction of a gpio
+function setGpioDirection(pin, direction) {
+    return new Promise(function (resolve, reject) {
+        getValueFromCommand(setDirectionCmd(pin,direction)).then(function (v) {
+            console.log(v);
+            resolve(v)
+        }).catch(errorHandler);
+
+    });
+}
+
 //Returns the "value" property of the specied pin and feeds the jsonObject passed as parameter. This returns a premise
 function getGpioValue(pin, jsonObject) {
     return new Promise(function (resolve, reject) {
@@ -180,12 +219,45 @@ function getGpioValue(pin, jsonObject) {
     });
 }
 
+function setGpioValue(pin, value) {
+    return new Promise(function (resolve, reject) {
+        getValueFromCommand(setValueCmd(pin,value)).then(function (v) {
+            console.log(v);
+            resolve(v)
+        }).catch(errorHandler);
+
+    });
+}
+
 //Check whether the pin in param is a correct GPIO Pin
 function checkGpioPin(pin) {
     if (gpioPins.indexOf(pin) < 0)
         throw "Invalid pin number";
 }
 
+//Check whether the direction is ok
+
+function checkDirection(direction){
+    if(direction !== 'in' && direction !== 'out')
+        throw 'Direction must be "in" or "out"';
+}
+
+///////////////////////////////////////////////////////////////////// API CONFIGURATION / WEB SERVER /////////////////////////////////////////////////////////////////////
+
+const authorizedProperties =['direction','value'];
+
+function checkProperty(property)
+{
+    if(authorizedProperties.indexOf(property) < 0){
+         var msg = 'property parameter should be one of these values : ' ;
+            authorizedProperties.forEach(function(authorizedProperty){
+                msg+= '\n'+authorizedProperty;
+            });
+
+        throw msg;
+    }
+      
+}
 //Init the web server and contains routes + logic 
 function initServer() {
     //Retrieve pin status
@@ -201,11 +273,45 @@ function initServer() {
         }
     });
 
+    app.post('/gpio/:pin/:property/:value',function(req,res){
+        try{
+            
+            var property = req.params['property'];
+            var pin = parseInt(req.params['pin']);
+            var value = parseInt(req.params['value']);
+
+            checkGpioPin(pin);
+            checkProperty(property);
+
+            console.log("property="+property);
+            console.log("value="+value);
+            console.log("pin="+pin);
+
+            if(property === 'direction'){
+                checkDirection(direction);
+                setGpioDirection(pin,direction).then(function(){
+                    res.json(jsonOkResult);
+                })
+            }
+            else if(property === 'value'){
+                setGpioValue(pin,value).then(function(){
+                    res.json(jsonOkResult);
+                })
+            }
+
+        }
+       catch (err) {
+            console.log(err);
+            res.json({ "error": err });
+        }
+
+    });
+
     //retrieve raspberry status
     app.get('/raspberry', function (req, res) {
-
+        console.log('received GET request on /raspberry')
         try {
-            getRaspberryStatus(pin).then(function (jsonObject) { res.json(jsonObject) });
+            getRaspberryStatus().catch(errorHandler).then(function (jsonObject) { res.json(jsonObject) });
         }
         catch (err) {
             res.json({ "error": err });
