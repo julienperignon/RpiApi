@@ -85,8 +85,8 @@ var getValueFromCommand = function (cmd) {
                     console.log("else");
                     value = stdout;
                 }
-                console.log('Executed command : ' + cmd);
-                console.log('Result :' + value);
+                // console.log('Executed command : ' + cmd);
+                // console.log('Result :' + value);
 
                 resolve(value);
             }
