@@ -44,7 +44,6 @@ const edgeCmd = function (pin) {
 }
 
 //GPIO base set command
-
 const setBaseCmd = function (value){
     return 'sudo echo '+value+ ' > ';
 }
@@ -85,8 +84,19 @@ var getValueFromCommand = function (cmd) {
                     console.log("else");
                     value = stdout;
                 }
-                // console.log('Executed command : ' + cmd);
-                // console.log('Result :' + value);
+
+                try{
+                    var savedValue = value;
+                    value = parseInt(value);
+                    if(isNaN(value))
+                        value = savedValue;
+                }
+                catch(err){
+                   
+                }
+
+                console.log('Executed command : ' + cmd);
+                console.log('Result :' + value);
 
                 resolve(value);
             }
@@ -278,7 +288,7 @@ function initServer() {
             
             var property = req.params['property'];
             var pin = parseInt(req.params['pin']);
-            var value = parseInt(req.params['value']);
+            var value = isNaN(parseInt(req.params['value'])) ? req.params['value'] : parseInt(req.params['value']) ;
 
             checkGpioPin(pin);
             checkProperty(property);
@@ -288,14 +298,46 @@ function initServer() {
             console.log("pin="+pin);
 
             if(property === 'direction'){
-                checkDirection(direction);
-                setGpioDirection(pin,direction).then(function(){
+                checkDirection(value);
+                setGpioDirection(pin,value).then(function(){
                     res.json(jsonOkResult);
                 })
             }
             else if(property === 'value'){
                 setGpioValue(pin,value).then(function(){
                     res.json(jsonOkResult);
+                })
+            }
+
+        }
+       catch (err) {
+            console.log(err);
+            res.json({ "error": err });
+        }
+
+    });
+
+    app.get('/gpio/:pin/:property',function(req,res){
+        try{
+            var jsonObject = {};
+            var property = req.params['property'];
+            var pin = parseInt(req.params['pin']);
+
+            checkGpioPin(pin);
+            checkProperty(property);
+
+            console.log("property="+property);
+            console.log("pin="+pin);
+
+            if(property === 'direction'){
+                checkDirection(direction);
+                getGpioDirection(pin,jsonObject).then(function(p, json){
+                    res.json(jsonObject);
+                })
+            }
+            else if(property === 'value'){
+                getGpioValue(pin,jsonObject).then(function(p, json){
+                    res.json(jsonObject);
                 })
             }
 
