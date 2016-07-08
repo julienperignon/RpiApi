@@ -1,0 +1,126 @@
+{
+	"variables": [],
+	"info": {
+		"name": "RPiApi",
+		"_postman_id": "bfce712f-796d-74fd-1108-689f01f2226a",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Raspberry Status",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": "tests[\"Status code is 200\"] = responseCode.code === 200;\n\nvar json = JSON.parse(responseBody);\n\nconst gpioPins = [0, 1, 4, 7, 8, 9, 10, 11, 15, 17, 18, 21, 22, 23, 24, 25];\n\ngpioPins.forEach(function(pin){\n    tests[\"GPIO\" + pin + \".pin=\"+pin] = json.raspberry[\"gpio\"+pin].pin == pin ;\n    tests[\"GPIO\" + pin + \".value is 1 or 0\"] = (json.raspberry[\"gpio\"+pin].value === 1 || json.raspberry[\"gpio\"+pin].value === 0);\n    tests[\"GPIO\" + pin + \".direction is in or out\"] = (json.raspberry[\"gpio\"+pin].direction === 'in' || json.raspberry[\"gpio\"+pin].direction ==='out');\n});\n\n\n"
+					}
+				}
+			],
+			"request": {
+				"url": "http://{{ip}}/raspberry",
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Status GPIO17",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": "tests[\"Status code is 200\"] = responseCode.code === 200;\n\nvar jsonData = JSON.parse(responseBody);\n\ntests[\"Pin is 17\"] = jsonData.pin === 17;\n\n"
+					}
+				}
+			],
+			"request": {
+				"url": "http://{{ip}}/gpio/17",
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Direction",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": "tests[\"Status code is 200\"] = responseCode.code === 200;\n\nvar jsonData = JSON.parse(responseBody);\ntests[\"Return code is ok\"] = jsonData.result == \"ok\";\n"
+					}
+				}
+			],
+			"request": {
+				"url": "http://{{ip}}/gpio/17/direction/out",
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Value GPIO 17",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": "tests[\"Status code is 200\"] = responseCode.code === 200;\n\nvar jsonData = JSON.parse(responseBody);\ntests[\"Return code is ok\"] = jsonData.result == \"ok\";\n"
+					}
+				}
+			],
+			"request": {
+				"url": "http://{{ip}}/gpio/17/value/1",
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Value GPIO17",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": "tests[\"Status code is 200\"] = responseCode.code === 200;\n\nvar jsonData = JSON.parse(responseBody);\n\ntests[\"Value is 1 or 0 \"] = (jsonData.value === 1 || jsonData.value === 0);\n\n"
+					}
+				}
+			],
+			"request": {
+				"url": "http://{{ip}}/gpio/17/value",
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"description": ""
+			},
+			"response": []
+		}
+	]
+}
