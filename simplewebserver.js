@@ -1,6 +1,6 @@
 var express = require('express');
 var app = express();
-var sys = require('sys');
+var sys = require('util');
 var exec = require('child_process').exec;
 var dispatch = require('dispatch');
 var Promise = require('promise');
