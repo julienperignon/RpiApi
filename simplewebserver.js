@@ -270,6 +270,13 @@ function checkProperty(property)
 }
 //Init the web server and contains routes + logic 
 function initServer() {
+
+    app.use(function(req,res,next){
+	res.header("Access-Control-Allow-Origin","*");
+	res.header("Access-Control-Allow-Headers","Origin, X-Requested-With, Content-Type, Accept");
+        next();
+     });
+
     //Retrieve pin status
     app.get('/gpio/:pin', function (req, res) {
 
